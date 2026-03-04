@@ -102,6 +102,34 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
+// ===================== API: 디버그 - 원본 응답 확인 =====================
+app.get('/api/debug/products', async (req, res) => {
+  if (!VENDOR_ID) return res.status(400).json({ ok: false, message: 'VENDOR_ID 미설정' });
+  try {
+    const path   = `/v2/providers/seller_api/apis/api/v1/marketplace/seller-products`;
+    const query  = `vendorId=${VENDOR_ID}&status=APPROVED&limit=5&page=1`;
+    const result = await callCoupangAPI('GET', path, query);
+    // 원본 응답 전체를 그대로 반환
+    res.json({ ok: true, vendorId: VENDOR_ID, rawResponse: result });
+  } catch (e) {
+    res.status(500).json({ ok: false, message: e.message });
+  }
+});
+
+app.get('/api/debug/revenue', async (req, res) => {
+  if (!VENDOR_ID) return res.status(400).json({ ok: false, message: 'VENDOR_ID 미설정' });
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
+    const path   = `/v2/providers/openapi/apis/api/v1/revenue-history`;
+    const query  = `startDate=${weekAgo}&endDate=${today}`;
+    const result = await callCoupangAPI('GET', path, query);
+    res.json({ ok: true, vendorId: VENDOR_ID, rawResponse: result });
+  } catch (e) {
+    res.status(500).json({ ok: false, message: e.message });
+  }
+});
+
 // ===================== API: 상품 목록 조회 =====================
 // GET /api/products?page=1&limit=100
 app.get('/api/products', async (req, res) => {

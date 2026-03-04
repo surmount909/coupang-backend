@@ -13,32 +13,38 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// ===================== 환경 변수 =====================
+// ===================== 환경 변수 (공백 제거) =====================
 const PORT = process.env.PORT || 3000;
-const VENDOR_ID   = process.env.COUPANG_VENDOR_ID;
-const ACCESS_KEY  = process.env.COUPANG_ACCESS_KEY;
-const SECRET_KEY  = process.env.COUPANG_SECRET_KEY;
+const VENDOR_ID   = (process.env.COUPANG_VENDOR_ID   || '').trim();
+const ACCESS_KEY  = (process.env.COUPANG_ACCESS_KEY  || '').trim();
+const SECRET_KEY  = (process.env.COUPANG_SECRET_KEY  || '').trim();
 
 // ===================== HMAC 서명 생성 =====================
 function generateHmac(method, path, queryStr) {
+  // 쿠팡 공식 포맷: yyMMddTHHmmssZ (UTC 기준)
   const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const yr  = String(now.getUTCFullYear()).slice(2);
+  const p = n => String(n).padStart(2, '0');
   const datetime =
-    yr +
-    pad(now.getUTCMonth() + 1) +
-    pad(now.getUTCDate()) +
+    String(now.getUTCFullYear()).slice(2) +
+    p(now.getUTCMonth() + 1) +
+    p(now.getUTCDate()) +
     'T' +
-    pad(now.getUTCHours()) +
-    pad(now.getUTCMinutes()) +
-    pad(now.getUTCSeconds()) +
+    p(now.getUTCHours()) +
+    p(now.getUTCMinutes()) +
+    p(now.getUTCSeconds()) +
     'Z';
 
-  const message   = datetime + method + path + (queryStr || '');
+  // 쿼리 있을 때만 붙임 (빈 문자열이면 제외)
+  const message = datetime + method + path + (queryStr ? queryStr : '');
+
   const signature = crypto
     .createHmac('sha256', SECRET_KEY)
     .update(message)
     .digest('hex');
+
+  console.log(`[HMAC] datetime=${datetime} method=${method} path=${path}`);
+  console.log(`[HMAC] message=${message}`);
+  console.log(`[HMAC] signature=${signature.slice(0,16)}...`);
 
   return {
     authorization: `CEA algorithm=HmacSHA256, access-key=${ACCESS_KEY}, signed-date=${datetime}, signature=${signature}`,

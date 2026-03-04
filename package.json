@@ -1,0 +1,17 @@
+{
+  "name": "coupang-ledger-backend",
+  "version": "1.0.0",
+  "description": "쿠팡 장부 백엔드 서버 - Coupang Open API 프록시",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

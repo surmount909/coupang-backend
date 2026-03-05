@@ -224,8 +224,8 @@ app.get('/api/sales', async function(req, res) {
 
     var sales = [];
     var orders = [];
-    if (result.data && result.data.data) {
-      orders = Array.isArray(result.data.data) ? result.data.data : [];
+    if (result.data) {
+      orders = Array.isArray(result.data) ? result.data : [];
     }
 
     orders.forEach(function(order) {

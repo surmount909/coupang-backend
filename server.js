@@ -13,42 +13,44 @@ app.use(cors({
 }));
 
 const PORT = process.env.PORT || 3000;
-const VENDOR_ID   = (process.env.COUPANG_VENDOR_ID  || '').trim();
-const ACCESS_KEY  = (process.env.COUPANG_ACCESS_KEY || '').trim();
-const SECRET_KEY  = (process.env.COUPANG_SECRET_KEY || '').trim();
 
-function generateHmac(method, path, queryStr) {
-  const datetime = new Date().toISOString()
-    .split('.')[0] + 'Z';
-  const signedDate = datetime
-    .replace(/:/g, '').replace(/-/g, '')
-    .substring(2);
+function cleanKey(val) {
+  if (!val) return '';
+  return val.replace(/[\u0000-\u001F\u200B-\u200D\uFEFF\u00A0\r\n]/g, '').trim();
+}
 
-  const message   = signedDate + method + path + (queryStr || '');
-  const signature = crypto
+var VENDOR_ID  = cleanKey(process.env.COUPANG_VENDOR_ID);
+var ACCESS_KEY = cleanKey(process.env.COUPANG_ACCESS_KEY);
+var SECRET_KEY = cleanKey(process.env.COUPANG_SECRET_KEY);
+
+function generateHmac(method, path, query) {
+  var datetime = new Date().toISOString().substr(2, 17).replace(/:/gi, '').replace(/-/gi, '') + 'Z';
+
+  var message = datetime + method + path + query;
+
+  var signature = crypto
     .createHmac('sha256', SECRET_KEY)
     .update(message)
     .digest('hex');
 
-  return {
-    authorization: 'CEA algorithm=HmacSHA256, access-key=' + ACCESS_KEY + ', signed-date=' + signedDate + ', signature=' + signature,
-    datetime: signedDate
-  };
+  var authorization = 'CEA algorithm=HmacSHA256, access-key=' + ACCESS_KEY + ', signed-date=' + datetime + ', signature=' + signature;
+
+  return authorization;
 }
 
-function callCoupangAPI(method, path, queryStr) {
-  if (!queryStr) queryStr = '';
+function callCoupangAPI(method, path, query) {
+  if (!query) query = '';
   return new Promise(function(resolve, reject) {
-    var hmac = generateHmac(method, path, queryStr);
-    var fullPath = queryStr ? path + '?' + queryStr : path;
+    var authorization = generateHmac(method, path, query);
+    var fullUrl = query ? path + '?' + query : path;
 
     var options = {
       hostname: 'api-gateway.coupang.com',
       port: 443,
-      path: fullPath,
+      path: fullUrl,
       method: method,
       headers: {
-        'Authorization': hmac.authorization,
+        'Authorization': authorization,
         'Content-Type': 'application/json;charset=UTF-8',
         'X-EXTENDED-TIMEOUT': '90000'
       }
@@ -72,7 +74,32 @@ app.get('/', function(req, res) {
     status: 'ok',
     message: 'Coupang Ledger Backend Running',
     vendorId: VENDOR_ID ? VENDOR_ID.slice(0, 4) + '****' : 'NOT SET',
+    accessKeyLen: ACCESS_KEY.length,
+    secretKeyLen: SECRET_KEY.length,
     apiReady: !!(VENDOR_ID && ACCESS_KEY && SECRET_KEY)
+  });
+});
+
+app.get('/api/debug', function(req, res) {
+  var method = 'GET';
+  var path = '/v2/providers/seller_api/apis/api/v1/marketplace/seller-products';
+  var query = 'vendorId=' + VENDOR_ID + '&status=APPROVED&limit=1';
+  var datetime = new Date().toISOString().substr(2, 17).replace(/:/gi, '').replace(/-/gi, '') + 'Z';
+  var message = datetime + method + path + query;
+
+  res.json({
+    info: 'message = datetime + method + path + query (NO ? sign)',
+    datetime: datetime,
+    method: method,
+    path: path,
+    query: query,
+    message: message,
+    vendorId_first4: VENDOR_ID ? VENDOR_ID.slice(0, 4) : 'EMPTY',
+    accessKey_first4: ACCESS_KEY ? ACCESS_KEY.slice(0, 4) : 'EMPTY',
+    secretKey_first4: SECRET_KEY ? SECRET_KEY.slice(0, 4) : 'EMPTY',
+    vendorId_length: VENDOR_ID.length,
+    accessKey_length: ACCESS_KEY.length,
+    secretKey_length: SECRET_KEY.length
   });
 });
 
@@ -84,7 +111,7 @@ app.get('/api/test', async function(req, res) {
     var path = '/v2/providers/seller_api/apis/api/v1/marketplace/seller-products';
     var query = 'vendorId=' + VENDOR_ID + '&status=APPROVED&limit=1';
     var result = await callCoupangAPI('GET', path, query);
-    res.json({ ok: true, message: 'API connected', sample: result });
+    res.json({ ok: true, sample: result });
   } catch (e) {
     res.status(500).json({ ok: false, message: e.message });
   }

@@ -209,8 +209,8 @@ app.get('/api/product-items', async function(req, res) {
   }
 });
 
-// ===== 전체 주문 가져오기 (페이지네이션) =====
-async function fetchAllOrders(from, to) {
+// ===== 특정 상태의 주문 가져오기 (페이지네이션) =====
+async function fetchOrdersByStatus(from, to, status) {
   var allOrders = [];
   var path = '/v2/providers/openapi/apis/api/v4/vendors/' + VENDOR_ID + '/ordersheets';
   var nextToken = '';
@@ -218,7 +218,7 @@ async function fetchAllOrders(from, to) {
   var page = 0;
 
   while (page < maxPages) {
-    var query = 'createdAtFrom=' + from + '&createdAtTo=' + to;
+    var query = 'createdAtFrom=' + from + '&createdAtTo=' + to + '&status=' + status;
     if (nextToken) {
       query = query + '&nextToken=' + nextToken;
     }
@@ -243,36 +243,142 @@ async function fetchAllOrders(from, to) {
   return allOrders;
 }
 
-// ===== 판매 내역 동기화 =====
+// ===== 모든 상태의 일반 주문 가져오기 =====
+async function fetchAllOrders(from, to) {
+  var statuses = ['ACCEPT', 'INSTRUCT', 'DEPARTURE', 'DELIVERING', 'FINAL_DELIVERY'];
+  var allOrders = [];
+
+  for (var i = 0; i < statuses.length; i++) {
+    var orders = await fetchOrdersByStatus(from, to, statuses[i]);
+    allOrders = allOrders.concat(orders);
+  }
+
+  return allOrders;
+}
+
+// ===== Rocket Growth 주문 가져오기 (페이지네이션) =====
+async function fetchRocketGrowthOrders(from, to) {
+  var allOrders = [];
+  var path = '/v2/providers/rg_open_api/apis/api/v1/vendors/' + VENDOR_ID + '/rg/orders';
+  var nextToken = '';
+  var maxPages = 50;
+  var page = 0;
+
+  // yyyy-MM-dd → yyyymmdd 변환
+  var dateFrom = from.replace(/-/g, '');
+  var dateTo = to.replace(/-/g, '');
+
+  while (page < maxPages) {
+    var query = 'paidDateFrom=' + dateFrom + '&paidDateTo=' + dateTo;
+    if (nextToken) {
+      query = query + '&nextToken=' + nextToken;
+    }
+
+    var result = await callCoupangAPI('GET', path, query);
+
+    if (result.data) {
+      var orders = Array.isArray(result.data) ? result.data : [];
+      allOrders = allOrders.concat(orders);
+
+      if (result.nextToken) {
+        nextToken = result.nextToken;
+        page++;
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  return allOrders;
+}
+
+// ===== 일반 주문 → 판매 형식 변환 =====
+function convertNormalOrders(orders) {
+  var sales = [];
+  orders.forEach(function(order) {
+    var date = (order.orderedAt || '').slice(0, 10);
+    var items = order.orderItems || [];
+    items.forEach(function(item) {
+      if (item.canceled) return;
+      sales.push({
+        saleDate: date,
+        optionId: String(item.vendorItemId || ''),
+        optionName: item.vendorItemName || '',
+        netAmt: item.orderPrice || 0,
+        netQty: item.shippingCount || 1,
+        sellPrice: item.salesPrice || item.orderPrice || 0,
+        channel: 'wing'
+      });
+    });
+  });
+  return sales;
+}
+
+// ===== Rocket Growth 주문 → 판매 형식 변환 =====
+function convertRGOrders(orders) {
+  var sales = [];
+  orders.forEach(function(order) {
+    var date = '';
+    if (order.paidAt) {
+      var d = new Date(Number(order.paidAt));
+      date = d.toISOString().slice(0, 10);
+    }
+    var items = order.orderItems || [];
+    items.forEach(function(item) {
+      sales.push({
+        saleDate: date,
+        optionId: String(item.vendorItemId || ''),
+        optionName: item.productName || '',
+        netAmt: (item.unitSalesPrice || 0) * (item.salesQuantity || 1),
+        netQty: item.salesQuantity || 1,
+        sellPrice: item.unitSalesPrice || 0,
+        channel: 'growth'
+      });
+    });
+  });
+  return sales;
+}
+
+// ===== 판매 내역 동기화 (윙 / 그로스 / 통합) =====
+// type=wing (윙만), type=growth (그로스만), type=all 또는 생략 (통합)
 app.get('/api/sales', async function(req, res) {
   if (!VENDOR_ID) return res.status(400).json({ success: false, error: 'VENDOR_ID not set' });
   try {
     var from = req.query.from || '';
     var to = req.query.to || '';
+    var type = req.query.type || 'all';
     if (!from || !to) {
       return res.status(400).json({ success: false, error: 'from, to 날짜를 입력하세요 (YYYY-MM-DD)' });
     }
 
-    var orders = await fetchAllOrders(from, to);
     var sales = [];
+    var wingSales = [];
+    var growthSales = [];
 
-    orders.forEach(function(order) {
-      var date = (order.orderedAt || '').slice(0, 10);
-      var items = order.orderItems || [];
-      items.forEach(function(item) {
-        if (item.canceled) return;
-        sales.push({
-          saleDate: date,
-          optionId: String(item.vendorItemId || ''),
-          optionName: item.vendorItemName || '',
-          netAmt: item.orderPrice || 0,
-          netQty: item.shippingCount || 1,
-          sellPrice: item.salesPrice || item.orderPrice || 0
-        });
-      });
+    // 윙 조회
+    if (type === 'all' || type === 'wing') {
+      var normalOrders = await fetchAllOrders(from, to);
+      wingSales = convertNormalOrders(normalOrders);
+      sales = sales.concat(wingSales);
+    }
+
+    // 그로스 조회
+    if (type === 'all' || type === 'growth') {
+      var rgOrders = await fetchRocketGrowthOrders(from, to);
+      growthSales = convertRGOrders(rgOrders);
+      sales = sales.concat(growthSales);
+    }
+
+    res.json({
+      success: true,
+      count: sales.length,
+      wingCount: wingSales.length,
+      growthCount: growthSales.length,
+      type: type,
+      sales: sales
     });
-
-    res.json({ success: true, count: sales.length, sales: sales });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }

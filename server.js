@@ -77,6 +77,38 @@ function callCoupangAPI(method, path, query) {
   });
 }
 
+async function fetchAllProducts() {
+  var allProducts = [];
+  var path = '/v2/providers/seller_api/apis/api/v1/marketplace/seller-products';
+  var nextToken = '';
+  var maxPages = 50;
+  var page = 0;
+
+  while (page < maxPages) {
+    var query = 'vendorId=' + VENDOR_ID + '&status=APPROVED';
+    if (nextToken) {
+      query = query + '&nextToken=' + nextToken;
+    }
+
+    var result = await callCoupangAPI('GET', path, query);
+
+    if (result.code === 'SUCCESS' && result.data) {
+      allProducts = allProducts.concat(result.data);
+
+      if (result.nextToken) {
+        nextToken = result.nextToken;
+        page++;
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  return allProducts;
+}
+
 app.get('/', function(req, res) {
   res.json({
     status: 'ok',
@@ -103,13 +135,8 @@ app.get('/api/test', async function(req, res) {
 app.get('/api/products', async function(req, res) {
   if (!VENDOR_ID) return res.status(400).json({ ok: false, message: 'VENDOR_ID not set' });
   try {
-    var page = req.query.page || 1;
-    var limit = req.query.limit || 100;
-    var status = req.query.status || 'APPROVED';
-    var path = '/v2/providers/seller_api/apis/api/v1/marketplace/seller-products';
-    var query = 'vendorId=' + VENDOR_ID + '&status=' + status + '&limit=' + limit + '&page=' + page;
-    var result = await callCoupangAPI('GET', path, query);
-    res.json({ ok: true, data: result });
+    var products = await fetchAllProducts();
+    res.json({ ok: true, count: products.length, products: products });
   } catch (e) {
     res.status(500).json({ ok: false, message: e.message });
   }

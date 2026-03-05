@@ -224,19 +224,22 @@ app.get('/api/sales', async function(req, res) {
 
     var sales = [];
     var orders = [];
-    if (result.data) {
-      orders = Array.isArray(result.data) ? result.data : [];
+    if (result.data && result.data.data) {
+      orders = Array.isArray(result.data.data) ? result.data.data : [];
     }
 
     orders.forEach(function(order) {
-      var date = (order.orderedAt || order.createdAt || '').slice(0, 10);
-      sales.push({
-        saleDate: date,
-        optionId: String(order.vendorItemId || ''),
-        optionName: order.vendorItemName || '',
-        netAmt: order.orderPrice || 0,
-        netQty: order.shippingCount || 1,
-        sellPrice: order.orderPrice || 0
+      var date = (order.orderedAt || '').slice(0, 10);
+      var items = order.orderItems || [];
+      items.forEach(function(item) {
+        sales.push({
+          saleDate: date,
+          optionId: String(item.vendorItemId || ''),
+          optionName: item.vendorItemName || '',
+          netAmt: item.orderPrice || 0,
+          netQty: item.shippingCount || 1,
+          sellPrice: item.salesPrice || item.orderPrice || 0
+        });
       });
     });
 

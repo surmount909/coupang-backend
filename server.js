@@ -219,7 +219,7 @@ app.get('/api/sales', async function(req, res) {
       return res.status(400).json({ success: false, error: 'from, to 날짜를 입력하세요 (YYYY-MM-DD)' });
     }
     var path = '/v2/providers/openapi/apis/api/v4/vendors/' + VENDOR_ID + '/ordersheets';
-    var query = 'createdAtFrom=' + from + 'T00:00:00&createdAtTo=' + to + 'T23:59:59&status=ACCEPT';
+    var query = 'createdAtFrom=' + from + '&createdAtTo=' + to + '&status=ACCEPT';
     var result = await callCoupangAPI('GET', path, query);
 
     var sales = [];
@@ -298,7 +298,7 @@ app.get('/api/orders', async function(req, res) {
       return res.status(400).json({ success: false, error: 'startDate, endDate required' });
     }
     var path = '/v2/providers/openapi/apis/api/v4/vendors/' + VENDOR_ID + '/ordersheets';
-    var query = 'createdAtFrom=' + startDate + 'T00:00:00&createdAtTo=' + endDate + 'T23:59:59&status=' + (status || 'ACCEPT');
+    var query = 'createdAtFrom=' + startDate + '&createdAtTo=' + endDate + '&status=' + (status || 'ACCEPT');
     var result = await callCoupangAPI('GET', path, query);
     res.json({ success: true, data: result });
   } catch (e) {

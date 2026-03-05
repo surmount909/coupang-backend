@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const https = require('https');
+const zlib = require('zlib');
 
 const app = express();
 app.use(express.json());
@@ -25,17 +26,9 @@ var SECRET_KEY = cleanKey(process.env.COUPANG_SECRET_KEY);
 
 function generateHmac(method, path, query) {
   var datetime = new Date().toISOString().substr(2, 17).replace(/:/gi, '').replace(/-/gi, '') + 'Z';
-
   var message = datetime + method + path + query;
-
-  var signature = crypto
-    .createHmac('sha256', SECRET_KEY)
-    .update(message)
-    .digest('hex');
-
-  var authorization = 'CEA algorithm=HmacSHA256, access-key=' + ACCESS_KEY + ', signed-date=' + datetime + ', signature=' + signature;
-
-  return authorization;
+  var signature = crypto.createHmac('sha256', SECRET_KEY).update(message).digest('hex');
+  return 'CEA algorithm=HmacSHA256, access-key=' + ACCESS_KEY + ', signed-date=' + datetime + ', signature=' + signature;
 }
 
 function callCoupangAPI(method, path, query) {
@@ -52,16 +45,31 @@ function callCoupangAPI(method, path, query) {
       headers: {
         'Authorization': authorization,
         'Content-Type': 'application/json;charset=UTF-8',
-        'X-EXTENDED-TIMEOUT': '90000'
+        'X-EXTENDED-TIMEOUT': '90000',
+        'Accept-Encoding': 'gzip'
       }
     };
 
     var req = https.request(options, function(res) {
-      var data = '';
-      res.on('data', function(chunk) { data += chunk; });
+      var chunks = [];
+      res.on('data', function(chunk) { chunks.push(chunk); });
       res.on('end', function() {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { resolve({ raw: data }); }
+        var buffer = Buffer.concat(chunks);
+        var encoding = res.headers['content-encoding'];
+
+        function parseResult(str) {
+          try { resolve(JSON.parse(str)); }
+          catch (e) { resolve({ raw: str }); }
+        }
+
+        if (encoding === 'gzip') {
+          zlib.gunzip(buffer, function(err, decoded) {
+            if (err) { resolve({ raw: buffer.toString() }); }
+            else { parseResult(decoded.toString('utf-8')); }
+          });
+        } else {
+          parseResult(buffer.toString('utf-8'));
+        }
       });
     });
     req.on('error', reject);
@@ -74,32 +82,7 @@ app.get('/', function(req, res) {
     status: 'ok',
     message: 'Coupang Ledger Backend Running',
     vendorId: VENDOR_ID ? VENDOR_ID.slice(0, 4) + '****' : 'NOT SET',
-    accessKeyLen: ACCESS_KEY.length,
-    secretKeyLen: SECRET_KEY.length,
     apiReady: !!(VENDOR_ID && ACCESS_KEY && SECRET_KEY)
-  });
-});
-
-app.get('/api/debug', function(req, res) {
-  var method = 'GET';
-  var path = '/v2/providers/seller_api/apis/api/v1/marketplace/seller-products';
-  var query = 'vendorId=' + VENDOR_ID + '&status=APPROVED&limit=1';
-  var datetime = new Date().toISOString().substr(2, 17).replace(/:/gi, '').replace(/-/gi, '') + 'Z';
-  var message = datetime + method + path + query;
-
-  res.json({
-    info: 'message = datetime + method + path + query (NO ? sign)',
-    datetime: datetime,
-    method: method,
-    path: path,
-    query: query,
-    message: message,
-    vendorId_first4: VENDOR_ID ? VENDOR_ID.slice(0, 4) : 'EMPTY',
-    accessKey_first4: ACCESS_KEY ? ACCESS_KEY.slice(0, 4) : 'EMPTY',
-    secretKey_first4: SECRET_KEY ? SECRET_KEY.slice(0, 4) : 'EMPTY',
-    vendorId_length: VENDOR_ID.length,
-    accessKey_length: ACCESS_KEY.length,
-    secretKey_length: SECRET_KEY.length
   });
 });
 

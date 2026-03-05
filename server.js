@@ -1,218 +1,193 @@
-const express = require('express');
-const cors = require('cors');
-const crypto = require('crypto');
-const https = require('https');
+● const express = require('express');
+  const cors = require('cors');
+  const crypto = require('crypto');
+  const https = require('https');
 
-const app = express();
-app.use(express.json());
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
+  const app = express();
+  app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
-const VENDOR_ID  = (process.env.COUPANG_VENDOR_ID  || '').trim();
-const ACCESS_KEY = (process.env.COUPANG_ACCESS_KEY  || '').trim();
-const SECRET_KEY = (process.env.COUPANG_SECRET_KEY  || '').trim();
+  // ✅ CORS 설정 - 어디서든 접근 허용
+  app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
 
-// ===================== 쿠팡 공식 HMAC 서명 =====================
-// 핵심: 쿼리스트링 파라미터는 반드시 알파벳 오름차순 정렬!
-function sortQueryString(queryStr) {
-  if (!queryStr) return '';
-  return queryStr.split('&')
-    .sort((a, b) => a.localeCompare(b))
-    .join('&');
-}
+  // ===================== 환경 변수 =====================
+  const PORT = process.env.PORT || 3000;
+  const VENDOR_ID   = (process.env.COUPANG_VENDOR_ID  || '').trim();
+  const ACCESS_KEY  = (process.env.COUPANG_ACCESS_KEY || '').trim();
+  const SECRET_KEY  = (process.env.COUPANG_SECRET_KEY || '').trim();
 
-function generateHmac(method, path, queryStr) {
-  const now = new Date();
-  const p = n => String(n).padStart(2, '0');
-  const datetime =
-    String(now.getUTCFullYear()).slice(2) +
-    p(now.getUTCMonth() + 1) + p(now.getUTCDate()) +
-    'T' + p(now.getUTCHours()) + p(now.getUTCMinutes()) + p(now.getUTCSeconds()) + 'Z';
+  // ===================== HMAC 서명 생성 (쿠팡 공식 방식) =====================
+  function generateHmac(method, path, queryStr) {
+    // 쿠팡 공식: toISOString → 콜론/하이픈 제거 → 앞 2자리(세기) 제거
+    const datetime = new Date().toISOString()
+      .split('.')[0] + 'Z';                        // "2026-03-05T14:30:45Z"
+    const signedDate = datetime
+      .replace(/:/g, '').replace(/-/g, '')          // "20260305T143045Z"
+      .substring(2);                                // "260305T143045Z"
 
-  // 쿼리 파라미터 알파벳 정렬 (필수!)
-  const sortedQuery = sortQueryString(queryStr);
-  const message = datetime + method + path + (sortedQuery || '');
+    const message   = signedDate + method + path + (queryStr || '');
+    const signature = crypto
+      .createHmac('sha256', SECRET_KEY)
+      .update(message)
+      .digest('hex');
 
-  const signature = crypto
-    .createHmac('sha256', SECRET_KEY)
-    .update(message)
-    .digest('hex');
-
-  console.log(`[HMAC] message = ${message}`);
-
-  return {
-    authorization: `CEA algorithm=HmacSHA256, access-key=${ACCESS_KEY}, signed-date=${datetime}, signature=${signature}`,
-    sortedQuery  // 실제 요청에 쓸 정렬된 쿼리
-  };
-}
-
-function callCoupang(method, path, queryStr = '') {
-  return new Promise((resolve, reject) => {
-    const { authorization, sortedQuery } = generateHmac(method, path, queryStr);
-    const fullPath = sortedQuery ? `${path}?${sortedQuery}` : path;
-    const options = {
-      hostname: 'api-gateway.coupang.com', port: 443,
-      path: fullPath, method,
-      headers: {
-        'Authorization': authorization,
-        'X-Requested-By': VENDOR_ID,
-        'Content-Type': 'application/json;charset=UTF-8'
-      }
+    return {
+      authorization: `CEA algorithm=HmacSHA256, access-key=${ACCESS_KEY}, signed-date=${signedDate}, signature=${signature}`,
+      datetime: signedDate
     };
-    console.log(`[REQ] ${method} ${fullPath}`);
-    const req = https.request(options, res => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => {
-        console.log(`[RES] status=${res.statusCode} body=${data.slice(0,200)}`);
-        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch (e) { resolve({ status: res.statusCode, body: { raw: data } }); }
+  }
+
+  // ===================== 쿠팡 API 호출 헬퍼 =====================
+  function callCoupangAPI(method, path, queryStr = '') {
+    return new Promise((resolve, reject) => {
+      const { authorization } = generateHmac(method, path, queryStr);
+      const fullPath = queryStr ? `${path}?${queryStr}` : path;
+
+      const options = {
+        hostname: 'api-gateway.coupang.com',
+        port: 443,
+        path: fullPath,
+        method,
+        headers: {
+          'Authorization':     authorization,
+          'Content-Type':      'application/json;charset=UTF-8',
+          'X-EXTENDED-TIMEOUT': '90000'
+        }
+      };
+
+      const req = https.request(options, res => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try { resolve(JSON.parse(data)); }
+          catch (e) { resolve({ raw: data }); }
+        });
       });
+      req.on('error', reject);
+      req.end();
     });
-    req.on('error', reject);
-    req.end();
+  }
+
+  // ===================== 상태 확인 =====================
+  app.get('/', (req, res) => {
+    res.json({
+      status: 'ok',
+      message: '쿠팡 장부 백엔드 서버 정상 작동 중',
+      vendorId: VENDOR_ID ? VENDOR_ID.slice(0, 4) + '****' : '미설정',
+      apiReady: !!(VENDOR_ID && ACCESS_KEY && SECRET_KEY)
+    });
   });
-}
 
-function checkEnv(req, res, next) {
-  if (!VENDOR_ID || !ACCESS_KEY || !SECRET_KEY)
-    return res.status(400).json({ success: false, error: 'Railway 환경변수 미설정' });
-  next();
-}
-
-app.get('/', (req, res) => {
-  res.json({ status: 'ok', message: '쿠팡 장부 백엔드 서버 정상 작동 중', vendorId: VENDOR_ID ? VENDOR_ID.slice(0,4)+'****' : '미설정', apiReady: !!(VENDOR_ID && ACCESS_KEY && SECRET_KEY) });
-});
-
-app.get('/api/test', checkEnv, async (req, res) => {
-  try {
-    const path = `/v2/providers/seller_api/apis/api/v1/marketplace/seller-products`;
-    const query = `vendorId=${VENDOR_ID}&status=APPROVED&limit=1`;
-    const { status, body } = await callCoupang('GET', path, query);
-    res.json({ success: status === 200, coupangStatus: status, message: status === 200 ? 'API 연결 성공' : '오류', body });
-  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
-});
-
-app.get('/api/debug/products', checkEnv, async (req, res) => {
-  try {
-    const { status, body } = await callCoupang('GET',
-      `/v2/providers/seller_api/apis/api/v1/marketplace/seller-products`,
-      `vendorId=${VENDOR_ID}&status=APPROVED&limit=3&page=1`);
-    res.json({ status, body });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/debug/orders', checkEnv, async (req, res) => {
-  try {
-    const today = new Date().toISOString().slice(0,10);
-    const weekAgo = new Date(Date.now()-7*24*60*60*1000).toISOString().slice(0,10);
-    const { status, body } = await callCoupang('GET',
-      `/v2/providers/openapi/apis/api/v4/vendors/${VENDOR_ID}/ordersheets`,
-      `createdAtFrom=${weekAgo}T00:00:00&createdAtTo=${today}T23:59:59&status=ACCEPT`);
-    res.json({ status, body, period: { from: weekAgo, to: today } });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-app.get('/api/products', checkEnv, async (req, res) => {
-  try {
-    let allItems = [], page = 1;
-    while (true) {
-      const { status, body } = await callCoupang('GET',
-        `/v2/providers/seller_api/apis/api/v1/marketplace/seller-products`,
-        `vendorId=${VENDOR_ID}&status=APPROVED&limit=100&page=${page}`);
-      if (status !== 200 || !body.data || !body.data.length) break;
-      allItems = allItems.concat(body.data);
-      if (body.data.length < 100 || page >= 10) break;
-      page++;
+  // ===================== API: 연결 테스트 =====================
+  app.get('/api/test', async (req, res) => {
+    if (!VENDOR_ID || !ACCESS_KEY || !SECRET_KEY) {
+      return res.status(400).json({ ok: false, message: '환경 변수가 설정되지 않았습니다.' });
     }
-    const products = [];
-    for (const item of allItems) {
-      let optionIds = [];
-      try {
-        const { body: detail } = await callCoupang('GET',
-          `/v2/providers/seller_api/apis/api/v1/marketplace/seller-products/${item.sellerProductId}`, '');
-        optionIds = ((detail.data || {}).items || []).map(opt => ({
-          optionId: String(opt.vendorItemId || ''),
-          optionName: opt.itemName || opt.vendorItemName || ''
-        })).filter(o => o.optionId);
-      } catch(e) {}
-      products.push({
-        id: String(item.sellerProductId),
-        name: item.sellerProductName || item.displayProductName || '상품명 없음',
-        category: item.displayCategoryName || '',
-        exposedId: String(item.sellerProductId),
-        optionIds,
-        createdAt: new Date().toISOString()
-      });
+    try {
+      const path    = `/v2/providers/seller_api/apis/api/v1/marketplace/seller-products`;
+      const query   = `vendorId=${VENDOR_ID}&status=APPROVED&limit=1`;
+      const result  = await callCoupangAPI('GET', path, query);
+      res.json({ ok: true, message: 'API 연결 성공', sample: result });
+    } catch (e) {
+      res.status(500).json({ ok: false, message: e.message });
     }
-    res.json({ success: true, products, count: products.length });
-  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
-});
+  });
 
-app.get('/api/sales', checkEnv, async (req, res) => {
-  try {
-    const from = req.query.from || new Date(Date.now()-30*24*60*60*1000).toISOString().slice(0,10);
-    const to   = req.query.to   || new Date().toISOString().slice(0,10);
-
-    const ranges = [];
-    let cur = new Date(from + 'T00:00:00Z');
-    const endDate = new Date(to + 'T23:59:59Z');
-    while (cur <= endDate) {
-      const rangeEnd = new Date(cur); rangeEnd.setDate(rangeEnd.getDate() + 6);
-      if (rangeEnd > endDate) rangeEnd.setTime(endDate.getTime());
-      ranges.push({ from: cur.toISOString().slice(0,10), to: rangeEnd.toISOString().slice(0,10) });
-      cur.setDate(cur.getDate() + 7);
+  // ===================== API: 상품 목록 조회 =====================
+  // GET /api/products?page=1&limit=100
+  app.get('/api/products', async (req, res) => {
+    if (!VENDOR_ID) return res.status(400).json({ ok: false, message: 'VENDOR_ID 미설정' });
+    try {
+      const page   = req.query.page  || 1;
+      const limit  = req.query.limit || 100;
+      const status = req.query.status || 'APPROVED';
+      const path   = `/v2/providers/seller_api/apis/api/v1/marketplace/seller-products`;
+      const query  = `vendorId=${VENDOR_ID}&status=${status}&limit=${limit}&page=${page}`;
+      const result = await callCoupangAPI('GET', path, query);
+      res.json({ ok: true, data: result });
+    } catch (e) {
+      res.status(500).json({ ok: false, message: e.message });
     }
+  });
 
-    const salesMap = {};
-    for (const range of ranges) {
-      for (const orderStatus of ['ACCEPT', 'CANCEL']) {
-        let nextToken = null, pageCount = 0;
-        do {
-          let query = `createdAtFrom=${range.from}T00:00:00&createdAtTo=${range.to}T23:59:59&status=${orderStatus}`;
-          if (nextToken) query += `&nextToken=${nextToken}`;
-          const { status, body } = await callCoupang('GET',
-            `/v2/providers/openapi/apis/api/v4/vendors/${VENDOR_ID}/ordersheets`, query);
-          if (status !== 200 || !body.data) break;
-          nextToken = body.nextToken || null;
-          for (const order of body.data) {
-            const saleDate = (order.orderedAt || order.paidAt || order.createdAt || '').slice(0,10);
-            if (!saleDate) continue;
-            for (const item of (order.orderItems || order.items || [])) {
-              const oid = String(item.vendorItemId || item.itemId || '');
-              if (!oid) continue;
-              const key = `${saleDate}_${oid}`;
-              const price = parseFloat(item.sellingPrice || item.unitPrice || 0);
-              const qty = parseInt(item.shippingCount || item.quantity || item.orderCount || 1);
-              if (!salesMap[key]) salesMap[key] = { id:`api_${key}`, saleDate, optionId:oid, optionName:item.vendorItemName||item.itemName||'', netAmt:0, netQty:0, grossAmt:0, cancelAmt:0, cancelQty:0 };
-              if (orderStatus === 'ACCEPT') {
-                salesMap[key].grossAmt += price * qty;
-                salesMap[key].netAmt  += price * qty;
-                salesMap[key].netQty  += qty;
-              } else {
-                salesMap[key].cancelAmt += price * qty;
-                salesMap[key].cancelQty += qty;
-                salesMap[key].netAmt   -= price * qty;
-                salesMap[key].netQty   -= qty;
-              }
-            }
-          }
-          pageCount++;
-        } while (nextToken && pageCount < 20);
+  // ===================== API: 상품 옵션 상세 조회 =====================
+  // GET /api/product-items?productId=xxx
+  app.get('/api/product-items', async (req, res) => {
+    if (!VENDOR_ID) return res.status(400).json({ ok: false, message: 'VENDOR_ID 미설정' });
+    try {
+      const { productId } = req.query;
+      if (!productId) return res.status(400).json({ ok: false, message: 'productId 필요' });
+      const path   = `/v2/providers/seller_api/apis/api/v1/marketplace/seller-products/${productId}`;
+      const result = await callCoupangAPI('GET', path, '');
+      res.json({ ok: true, data: result });
+    } catch (e) {
+      res.status(500).json({ ok: false, message: e.message });
+    }
+  });
+
+  // ===================== API: 매출 내역 조회 =====================
+  // GET /api/revenue?startDate=2026-02-01&endDate=2026-02-28
+  app.get('/api/revenue', async (req, res) => {
+    if (!VENDOR_ID) return res.status(400).json({ ok: false, message: 'VENDOR_ID 미설정' });
+    try {
+      const { startDate, endDate } = req.query;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ ok: false, message: 'startDate, endDate 필요 (YYYY-MM-DD)' });
       }
+      const path   = `/v2/providers/openapi/apis/api/v1/revenue-history`;
+      const query  = `startDate=${startDate}&endDate=${endDate}`;
+      const result = await callCoupangAPI('GET', path, query);
+      res.json({ ok: true, data: result });
+    } catch (e) {
+      res.status(500).json({ ok: false, message: e.message });
     }
-    const sales = Object.values(salesMap);
-    res.json({ success: true, sales, count: sales.length, period: { from, to } });
-  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
-});
+  });
 
-app.get('/api/ads', checkEnv, (req, res) => {
-  res.json({ success: true, daily: [], message: '쿠팡 Open API는 광고비 미제공 — Wing 엑셀로 수동 업로드' });
-});
+  // ===================== API: 정산 내역 조회 =====================
+  // GET /api/settlement?year=2026&month=02
+  app.get('/api/settlement', async (req, res) => {
+    if (!VENDOR_ID) return res.status(400).json({ ok: false, message: 'VENDOR_ID 미설정' });
+    try {
+      const { year, month } = req.query;
+      if (!year || !month) {
+        return res.status(400).json({ ok: false, message: 'year, month 필요' });
+      }
+      const path   = `/v2/providers/marketplace_openapi/apis/api/v1/settlement-histories`;
+      const query  = `year=${year}&month=${month}`;
+      const result = await callCoupangAPI('GET', path, query);
+      res.json({ ok: true, data: result });
+    } catch (e) {
+      res.status(500).json({ ok: false, message: e.message });
+    }
+  });
 
-app.listen(PORT, () => {
-  console.log(`✅ 서버 실행 중 → 포트 ${PORT}`);
-  console.log(`   VENDOR_ID:  ${VENDOR_ID  ? VENDOR_ID.slice(0,4)+'****' : '❌ 미설정'}`);
-  console.log(`   ACCESS_KEY: ${ACCESS_KEY ? '****설정됨' : '❌ 미설정'}`);
-  console.log(`   SECRET_KEY: ${SECRET_KEY ? '****설정됨' : '❌ 미설정'}`);
-});
+  // ===================== API: 주문 목록 조회 =====================
+  // GET /api/orders?startDate=2026-02-01&endDate=2026-02-28
+  app.get('/api/orders', async (req, res) => {
+    if (!VENDOR_ID) return res.status(400).json({ ok: false, message: 'VENDOR_ID 미설정' });
+    try {
+      const { startDate, endDate, status } = req.query;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ ok: false, message: 'startDate, endDate 필요' });
+      }
+      const path   = `/v2/providers/openapi/apis/api/v4/vendors/${VENDOR_ID}/ordersheets`;
+      const query  = `createdAtFrom=${startDate}T00:00:00&createdAtTo=${endDate}T23:59:59&status=${status || 'ACCEPT'}`;
+      const result = await callCoupangAPI('GET', path, query);
+      res.json({ ok: true, data: result });
+    } catch (e) {
+      res.status(500).json({ ok: false, message: e.message });
+    }
+  });
+
+  // ===================== 서버 시작 =====================
+  app.listen(PORT, () => {
+    console.log(`✅ 쿠팡 장부 서버 실행 중 → 포트 ${PORT}`);
+    console.log(`   VENDOR_ID: ${VENDOR_ID ? VENDOR_ID.slice(0,4)+'****' : '❌ 미설정'}`);
+    console.log(`   ACCESS_KEY: ${ACCESS_KEY ? '****설정됨' : '❌ 미설정'}`);
+    console.log(`   SECRET_KEY: ${SECRET_KEY ? '****설정됨' : '❌ 미설정'}`);
+  });
+
+  이걸 통째로 복사해서 GitHub의 server.js에 붙여넣으시면 됩니다!

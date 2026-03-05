@@ -209,6 +209,40 @@ app.get('/api/product-items', async function(req, res) {
   }
 });
 
+// ===== 전체 주문 가져오기 (페이지네이션) =====
+async function fetchAllOrders(from, to) {
+  var allOrders = [];
+  var path = '/v2/providers/openapi/apis/api/v4/vendors/' + VENDOR_ID + '/ordersheets';
+  var nextToken = '';
+  var maxPages = 50;
+  var page = 0;
+
+  while (page < maxPages) {
+    var query = 'createdAtFrom=' + from + '&createdAtTo=' + to;
+    if (nextToken) {
+      query = query + '&nextToken=' + nextToken;
+    }
+
+    var result = await callCoupangAPI('GET', path, query);
+
+    if (result.data) {
+      var orders = Array.isArray(result.data) ? result.data : [];
+      allOrders = allOrders.concat(orders);
+
+      if (result.nextToken) {
+        nextToken = result.nextToken;
+        page++;
+      } else {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  return allOrders;
+}
+
 // ===== 판매 내역 동기화 =====
 app.get('/api/sales', async function(req, res) {
   if (!VENDOR_ID) return res.status(400).json({ success: false, error: 'VENDOR_ID not set' });
@@ -218,20 +252,15 @@ app.get('/api/sales', async function(req, res) {
     if (!from || !to) {
       return res.status(400).json({ success: false, error: 'from, to 날짜를 입력하세요 (YYYY-MM-DD)' });
     }
-    var path = '/v2/providers/openapi/apis/api/v4/vendors/' + VENDOR_ID + '/ordersheets';
-    var query = 'createdAtFrom=' + from + '&createdAtTo=' + to + '&status=ACCEPT';
-    var result = await callCoupangAPI('GET', path, query);
 
+    var orders = await fetchAllOrders(from, to);
     var sales = [];
-    var orders = [];
-    if (result.data) {
-      orders = Array.isArray(result.data) ? result.data : [];
-    }
 
     orders.forEach(function(order) {
       var date = (order.orderedAt || '').slice(0, 10);
       var items = order.orderItems || [];
       items.forEach(function(item) {
+        if (item.canceled) return;
         sales.push({
           saleDate: date,
           optionId: String(item.vendorItemId || ''),

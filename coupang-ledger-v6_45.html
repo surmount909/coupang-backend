@@ -6,7 +6,6 @@
 <title>쿠팡 장부</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#f0f2f7;--surface:#fff;--card:#fff;--card2:#f7f8fc;
@@ -61,10 +60,13 @@ main.no-sub{padding-top:calc(var(--H) + 20px);}
 .panel-body{padding:16px 18px;}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
 .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 17px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
-.kpi-label{font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;font-weight:600;}
-.kpi-val{font-size:1.3rem;font-weight:700;font-family:'Roboto Mono',monospace;}
+.kpi-card.kpi-highlight{background:linear-gradient(135deg,#f0f7ff 0%,#e8f4fd 100%);border:1.5px solid var(--accent);box-shadow:0 2px 8px rgba(14,165,233,.12);}
+.kpi-card.kpi-highlight-profit{background:linear-gradient(135deg,#f0fdf4 0%,#e8fbe8 100%);border:1.5px solid var(--profit);box-shadow:0 2px 8px rgba(15,155,88,.12);}
+.kpi-card.kpi-highlight-loss{background:linear-gradient(135deg,#fef2f2 0%,#fde8e8 100%);border:1.5px solid var(--loss);box-shadow:0 2px 8px rgba(220,38,38,.12);}
+.kpi-label{font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;font-weight:600;}
+.kpi-val{font-size:1.6rem;font-weight:800;font-family:Pretendard,-apple-system,sans-serif;letter-spacing:-.02em;}
 .kpi-val.y{color:var(--accent);}.kpi-val.g{color:var(--profit);}.kpi-val.r{color:var(--loss);}.kpi-val.p{color:var(--accent4);}
-.kpi-sub{font-size:.64rem;color:var(--text3);margin-top:3px;}
+.kpi-sub{font-size:.7rem;color:var(--text3);margin-top:4px;font-weight:500;}
 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:.76rem;font-weight:600;transition:.14s;white-space:nowrap;}
@@ -115,7 +117,7 @@ tfoot td:first-child{text-align:left;}
 /* EMPTY STATE */
 .empty-state{text-align:center;padding:36px;color:var(--text3);font-size:.8rem;}
 .text-muted{color:var(--text3);}.text-accent{color:var(--accent);}.text-profit{color:var(--profit);}.text-loss{color:var(--loss);}
-.font-bold{font-weight:700;}.font-mono{font-family:'Roboto Mono',monospace;}
+.font-bold{font-weight:700;}.font-mono{font-family:Pretendard,-apple-system,sans-serif;}
 .text-sm{font-size:.74rem;}.text-xs{font-size:.65rem;}
 .page-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;}
 .page-title{font-size:1.2rem;font-weight:700;letter-spacing:-.02em;}
@@ -141,7 +143,7 @@ tfoot td:first-child{text-align:left;}
 .cost-table td{border:1px solid var(--border);padding:0;vertical-align:middle;}
 .cost-table tr:hover td{background:#f8fbff;}
 .cost-table .td-label{padding:8px 12px;font-size:13px;white-space:nowrap;}
-.cost-table .td-id{padding:6px 10px;font-size:11px;color:var(--text3);font-family:'Roboto Mono',monospace;white-space:nowrap;}
+.cost-table .td-id{padding:6px 10px;font-size:11px;color:var(--text3);font-family:Pretendard,-apple-system,sans-serif;white-space:nowrap;}
 .cost-table input.cell-input{width:100%;border:none;background:transparent;padding:8px 10px;font-size:13px;font-family:Pretendard,sans-serif;color:var(--text);outline:none;}
 .cost-table input.cell-input:focus{background:#eff8ff;box-shadow:inset 0 0 0 2px var(--accent2);}
 .cost-table .group-header td{background:#e8f0fe;font-weight:700;font-size:13px;padding:8px 14px;color:#1a3a6e;border-bottom:2px solid #b8cef7;}
@@ -175,7 +177,7 @@ tfoot td:first-child{text-align:left;}
 .tt-row{display:flex;justify-content:space-between;gap:16px;margin-bottom:5px;}
 .tt-row:last-child{margin-bottom:0;border-top:1px solid var(--border);padding-top:5px;font-weight:700;}
 .tt-label{color:var(--text2);}
-.tt-val{font-family:'Roboto Mono',monospace;font-weight:600;}
+.tt-val{font-family:Pretendard,-apple-system,sans-serif;font-weight:600;}
 
 /* BAR */
 .bar-wrap{background:var(--card2);border-radius:4px;height:5px;overflow:hidden;}
@@ -183,7 +185,7 @@ tfoot td:first-child{text-align:left;}
 
 /* CALENDAR */
 .cal-nav{display:flex;gap:6px;align-items:center;}
-.cal-title{font-size:.95rem;font-weight:700;font-family:'Roboto Mono',monospace;}
+.cal-title{font-size:.95rem;font-weight:700;font-family:Pretendard,-apple-system,sans-serif;}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
 .cal-dow{text-align:center;font-size:.6rem;color:var(--text3);padding:4px 0;font-weight:600;letter-spacing:.06em;}
 .cal-dow:first-child{color:#ef4444;}
@@ -195,8 +197,8 @@ tfoot td:first-child{text-align:left;}
 .cal-day-num{font-size:.67rem;font-weight:600;color:var(--text2);margin-bottom:3px;}
 .cal-day.today .cal-day-num{color:var(--accent);}
 .cal-day-num.sun{color:#ef4444;}
-.cal-rev{font-size:.62rem;font-family:'Roboto Mono',monospace;color:var(--accent);font-weight:600;}
-.cal-margin{font-size:.59rem;font-family:'Roboto Mono',monospace;}
+.cal-rev{font-size:.62rem;font-family:Pretendard,-apple-system,sans-serif;color:var(--accent);font-weight:600;}
+.cal-margin{font-size:.59rem;font-family:Pretendard,-apple-system,sans-serif;}
 .cal-margin.pos{color:var(--profit);}.cal-margin.neg{color:var(--loss);}
 .cal-mode-btn{display:flex;gap:4px;}
 .cal-mode-btn button{padding:5px 11px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:.7rem;cursor:pointer;font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:.14s;}
@@ -209,8 +211,8 @@ tfoot td:first-child{text-align:left;}
 .month-card.active{border-color:var(--accent);background:rgba(14,165,233,.04);}
 .month-card .mc-label{font-size:.58rem;color:var(--text3);letter-spacing:.08em;margin-bottom:3px;}
 .month-card .mc-month{font-size:.74rem;font-weight:700;margin-bottom:4px;}
-.month-card .mc-rev{font-size:.78rem;font-weight:700;font-family:'Roboto Mono',monospace;color:var(--accent);}
-.month-card .mc-margin{font-size:.66rem;font-family:'Roboto Mono',monospace;margin-top:2px;}
+.month-card .mc-rev{font-size:.78rem;font-weight:700;font-family:Pretendard,-apple-system,sans-serif;color:var(--accent);}
+.month-card .mc-margin{font-size:.66rem;font-family:Pretendard,-apple-system,sans-serif;margin-top:2px;}
 
 /* ===== AD ANALYSIS PIVOT TABLE ===== */
 .aa-wrap{display:flex;flex-direction:column;height:calc(100vh - 160px);min-height:500px;}
@@ -248,7 +250,7 @@ tfoot td:first-child{text-align:left;}
 .aa-empty-msg{display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3);font-size:.84rem;}
 
 /* SYNC LOG */
-.sync-log{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'Roboto Mono',monospace;font-size:.7rem;color:var(--text2);max-height:180px;overflow-y:auto;line-height:1.8;}
+.sync-log{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:Pretendard,-apple-system,sans-serif;font-size:.7rem;color:var(--text2);max-height:180px;overflow-y:auto;line-height:1.8;}
 .sync-log .ok{color:var(--profit);}.sync-log .err{color:var(--loss);}
 
 /* API step */
@@ -662,10 +664,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
       <div class="panel-body">
         <div class="form-group mb-3"><label class="form-label">판매 날짜 *</label><input type="date" id="sales-date" style="width:180px"></div>
         <div class="upload-zone" ondrop="handleSalesDrop(event)" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')">
-          <input type="file" accept=".xlsx,.xls" onchange="handleSalesFile(event)">
+          <input type="file" accept=".xlsx,.xls" multiple onchange="handleSalesFile(event)">
           <div style="font-size:1.7rem;margin-bottom:8px">📊</div>
           <div class="upload-title">Statistics 파일 드롭</div>
-          <div class="upload-hint">또는 클릭하여 선택</div>
+          <div class="upload-hint">여러 파일 선택 가능 (파일명에서 날짜 자동 추출)</div>
         </div>
       </div>
     </div>
@@ -857,7 +859,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
       <div id="sync-manual-result"></div>
       <div class="panel" style="background:var(--card2);padding:12px 14px;border-radius:8px;margin-top:4px">
         <div style="font-size:.7rem;font-weight:700;color:var(--text2);margin-bottom:8px">📜 동기화 로그</div>
-        <div id="sync-log" style="font-size:.69rem;color:var(--text3);line-height:2;max-height:120px;overflow-y:auto;font-family:'Roboto Mono',monospace"></div>
+        <div id="sync-log" style="font-size:.69rem;color:var(--text3);line-height:2;max-height:120px;overflow-y:auto;font-family:Pretendard,-apple-system,sans-serif"></div>
       </div>
     </div>
   </div>
@@ -984,7 +986,7 @@ const MAIN_DEFAULT={
   'data-upload':'product-import','ad-analysis':'ad-analysis','api':'api'
 };
 
-function goMain(section){
+function goMain(section,skipHash){
   currentMain=section;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const btn=document.querySelector(`[onclick*="goMain('${section}')"]`);
@@ -1003,9 +1005,10 @@ function goMain(section){
     if(section==='dashboard')renderDashboard();
     if(section==='api'){loadApiKeyForm();}
   }
+  if(!skipHash)location.hash=section;
 }
 
-function goSub(section,tabId){
+function goSub(section,tabId,skipHash){
   const sub=SUBNAV[section];
   if(sub){
     document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
@@ -1017,10 +1020,11 @@ function goSub(section,tabId){
   if(tabId==='products-manage')renderProducts();
   if(tabId==='products-import-log')renderImportLog();
   if(tabId==='products-inventory')renderInventory();
-  if(tabId==='sales-upload'){renderSalesHistory();renderMappingManager();}
+  if(tabId==='sales-upload'){renderSalesHistory();renderMappingManager();renderPendingUnmapped();}
   if(tabId==='ad-upload')renderAdHistory();
   if(tabId==='ad-analysis')renderAdAnalysisCampaigns();
   if(tabId==='ad-analysis-upload')renderAAFileList();
+  if(!skipHash)location.hash=section+'/'+tabId;
 }
 
 function activateTab(id){
@@ -1366,7 +1370,7 @@ function renderProducts(){
           returnOids.forEach(rOid=>{
             const sample=allSales.find(s=>String(s.optionId)===String(rOid));
             const mappedAt=mappings[rOid]?.createdAt?new Date(mappings[rOid].createdAt).toLocaleDateString('ko-KR'):'';
-            rows+=`<tr style="background:#fffbeb"><td style="padding:6px 10px 6px 44px;font-size:12px;color:#78350f">${sample?.optionName||rOid}</td><td style="font-size:11px;font-family:monospace;color:#92400e">${rOid}</td><td colspan="4" style="font-size:11px;color:#a16207;padding:6px 10px">↗ ${o.optionName||o.optionId} 원가 상속 중</td><td style="font-size:11px;color:var(--text3);padding:6px 10px">${mappedAt}</td><td></td><td style="text-align:right;padding:4px 8px"><button class="btn btn-danger btn-xs" onclick="deleteMapping('${rOid}');renderProducts()">해제</button></td></tr>`;
+            rows+=`<tr style="background:#fffbeb"><td style="padding:6px 10px 6px 44px;font-size:12px;color:#78350f">${sample?.optionName||rOid}</td><td style="font-size:11px;font-family:Pretendard,-apple-system,sans-serif;color:#92400e">${rOid}</td><td colspan="4" style="font-size:11px;color:#a16207;padding:6px 10px">↗ ${o.optionName||o.optionId} 원가 상속 중</td><td style="font-size:11px;color:var(--text3);padding:6px 10px">${mappedAt}</td><td></td><td style="text-align:right;padding:4px 8px"><button class="btn btn-danger btn-xs" onclick="deleteMapping('${rOid}');renderProducts()">해제</button></td></tr>`;
           });
         }
       });
@@ -1439,40 +1443,55 @@ function confirmImport(){
 }
 
 // ==================== SALES UPLOAD ====================
-function handleSalesDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)processSalesFile(f);}
-function handleSalesFile(e){const f=e.target.files[0];if(f)processSalesFile(f);e.target.value='';}
-function processSalesFile(file){
+function handleSalesDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag');const files=[...e.dataTransfer.files].filter(f=>/\.xlsx?$/i.test(f.name));if(files.length)processMultipleSalesFiles(files);}
+function handleSalesFile(e){const files=[...e.target.files];if(files.length)processMultipleSalesFiles(files);e.target.value='';}
+function processMultipleSalesFiles(files){
+  // 파일명에서 날짜 추출 가능한 파일과 불가능한 파일 분리
   const dateEl=document.getElementById('sales-date');
-  const m=file.name.match(/Statistics-(\d{4})(\d{2})(\d{2})/);
-  if(m&&!dateEl.value)dateEl.value=`${m[1]}-${m[2]}-${m[3]}`;
-  const saleDate=dateEl.value;if(!saleDate){alert('판매 날짜를 먼저 입력하세요.');return;}
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const wb=XLSX.read(e.target.result,{type:'array'});
-    const ws=wb.Sheets[wb.SheetNames[0]];
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-    const newSales=[];
-    for(let i=1;i<rows.length;i++){
-      const row=rows[i];const oid=String(row[1]||'').trim();
-      if(!oid||oid==='TOTAL'||oid==='')continue;
-      const netAmt=parseFloat(row[6])||0,netQty=parseFloat(row[7])||0;
-      newSales.push({id:'s'+Date.now()+'_'+i,saleDate,noExposureId:String(row[0]||'').trim(),optionId:oid,optionName:String(row[2]||'').trim(),netAmt,netQty,actualSellPrice:netQty>0?netAmt/netQty:0,grossAmt:parseFloat(row[8])||0,grossQty:parseFloat(row[9])||0,cancelAmt:parseFloat(row[10])||0,cancelQty:parseFloat(row[11])||0});
-    }
-    DB.set('sales',[...DB.sales().filter(s=>s.saleDate!==saleDate),...newSales]);
-    const total=newSales.reduce((a,s)=>a+(s.netAmt||0),0),qty=newSales.reduce((a,s)=>a+(s.netQty||0),0);
-    let previewHtml=`<div class="notice info">✅ <b>${file.name}</b> — ${saleDate} | ${newSales.length}옵션 | ${won(total)} | ${num(qty)}개</div>`;
-    // 미등록 옵션 감지
-    const mappings=DB.get('option_mappings')||{};
-    const unmapped=[...new Map(newSales.filter(s=>!getOptionCostData(s.optionId)&&!mappings[String(s.optionId)]).map(s=>[s.optionId,s])).values()];
-    if(unmapped.length){
-      previewHtml+=`<div class="notice" style="background:#fffbeb;border-color:#fbbf24;margin-top:8px">⚠️ <b>${unmapped.length}개 옵션ID</b>가 등록되지 않았습니다. 아래에서 원본 옵션과 연결하세요.</div>`;
-      previewHtml+=renderMappingUI(unmapped);
-    }
-    document.getElementById('sales-preview').innerHTML=previewHtml;
-    renderSalesHistory();renderMappingManager();updateNavInfo();
-  };
-  reader.readAsArrayBuffer(file);
+  const parsed=files.map(f=>{const m=f.name.match(/Statistics-(\d{4})(\d{2})(\d{2})/);return{file:f,date:m?`${m[1]}-${m[2]}-${m[3]}`:null};});
+  const noDate=parsed.filter(p=>!p.date);
+  if(noDate.length>0&&!dateEl.value){alert(`${noDate.map(p=>p.file.name).join(', ')} 파일에서 날짜를 추출할 수 없습니다. 판매 날짜를 입력하세요.`);return;}
+  // 날짜 없는 파일은 수동 입력 날짜 사용
+  parsed.forEach(p=>{if(!p.date)p.date=dateEl.value;});
+  // 날짜순 정렬 후 순차 처리
+  parsed.sort((a,b)=>a.date.localeCompare(b.date));
+  let completed=0;let previewHtml='';let allUnmapped=[];
+  parsed.forEach(p=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const newSales=[];
+      for(let i=1;i<rows.length;i++){
+        const row=rows[i];const oid=String(row[1]||'').trim();
+        if(!oid||oid==='TOTAL'||oid==='')continue;
+        const netAmt=parseFloat(row[6])||0,netQty=parseFloat(row[7])||0;
+        newSales.push({id:'s'+Date.now()+'_'+completed+'_'+i,saleDate:p.date,noExposureId:String(row[0]||'').trim(),optionId:oid,optionName:String(row[2]||'').trim(),netAmt,netQty,actualSellPrice:netQty>0?netAmt/netQty:0,grossAmt:parseFloat(row[8])||0,grossQty:parseFloat(row[9])||0,cancelAmt:parseFloat(row[10])||0,cancelQty:parseFloat(row[11])||0});
+      }
+      DB.set('sales',[...DB.sales().filter(s=>s.saleDate!==p.date),...newSales]);
+      const total=newSales.reduce((a,s)=>a+(s.netAmt||0),0),qty=newSales.reduce((a,s)=>a+(s.netQty||0),0);
+      previewHtml+=`<div class="notice info" style="margin-bottom:4px">✅ <b>${p.file.name}</b> — ${p.date} | ${newSales.length}옵션 | ${won(total)} | ${num(qty)}개</div>`;
+      const mappings=DB.get('option_mappings')||{};
+      const unmapped=newSales.filter(s=>!getOptionCostData(s.optionId)&&!mappings[String(s.optionId)]);
+      allUnmapped=allUnmapped.concat(unmapped);
+      completed++;
+      if(completed===parsed.length){
+        // 전체 완료
+        previewHtml=`<div class="notice info" style="margin-bottom:8px">📦 <b>${completed}개 파일</b> 업로드 완료</div>`+previewHtml;
+        const uniqueUnmapped=[...new Map(allUnmapped.map(s=>[s.optionId,s])).values()];
+        if(uniqueUnmapped.length){
+          previewHtml+=`<div class="notice" style="background:#fffbeb;border-color:#fbbf24;margin-top:8px">⚠️ <b>${uniqueUnmapped.length}개 옵션ID</b>가 등록되지 않았습니다. 아래에서 원본 옵션과 연결하세요.</div>`;
+          previewHtml+=renderMappingUI(uniqueUnmapped);
+        }
+        document.getElementById('sales-preview').innerHTML=previewHtml;
+        renderSalesHistory();renderMappingManager();updateNavInfo();
+      }
+    };
+    reader.readAsArrayBuffer(p.file);
+  });
 }
+function processSalesFile(file){processMultipleSalesFiles([file]);}
 function renderSalesHistory(){
   const sales=DB.sales();const dates=[...new Set(sales.map(s=>s.saleDate))].sort().reverse();
   document.getElementById('sales-history').innerHTML=dates.length?`<table><thead><tr><th>날짜</th><th>옵션수</th><th>순매출</th><th>수량</th><th></th></tr></thead><tbody>${dates.map(d=>{const ds=sales.filter(s=>s.saleDate===d);return`<tr><td>${d}</td><td>${ds.length}</td><td class="font-mono text-accent">${won(ds.reduce((a,s)=>a+(s.netAmt||0),0))}</td><td>${num(ds.reduce((a,s)=>a+(s.netQty||0),0))}</td><td><button class="btn btn-danger btn-sm" onclick="deleteSalesDate('${d}')">삭제</button></td></tr>`;}).join('')}</tbody></table>`:'<div class="empty-state">업로드된 판매 데이터 없음</div>';
@@ -1481,63 +1500,98 @@ function deleteSalesDate(date){if(!confirm(`${date} 삭제?`))return;DB.set('sal
 function clearAllSales(){if(!confirm('모든 판매 데이터를 삭제하시겠습니까?'))return;DB.set('sales',[]);renderSalesHistory();updateNavInfo();}
 
 // ==================== OPTION MAPPING ====================
+// 자동 매칭: 엑셀 옵션명에서 상품명이 포함되면 매칭
+function autoMatchOption(saleName){
+  if(!saleName)return null;
+  const products=DB.products();
+  let bestProd=null,bestLen=0;
+  products.forEach(p=>{
+    const pname=(p.name||'').replace(/[\[\]]/g,'').trim();
+    if(pname.length>3&&saleName.includes(pname)&&pname.length>bestLen){bestProd=p;bestLen=pname.length;}
+  });
+  if(!bestProd)return null;
+  const growthOpts=(bestProd.optionIds||[]).filter(o=>o.channel==='growth');
+  if(!growthOpts.length)return null;
+  // 옵션이 1개면 바로 매칭, 여러 개면 옵션명으로 세부 매칭
+  if(growthOpts.length===1)return{productName:bestProd.name,optionId:growthOpts[0].optionId,optionName:growthOpts[0].optionName};
+  const rest=saleName.replace((bestProd.name||'').replace(/[\[\]]/g,''),'').replace(/^[\s,]+/,'');
+  let bestOpt=growthOpts[0],bestOptScore=0;
+  growthOpts.forEach(o=>{
+    const on=(o.optionName||'');
+    const parts=on.split(/\s+/);
+    let score=0;parts.forEach(w=>{if(w.length>1&&rest.includes(w))score+=w.length;});
+    if(score>bestOptScore){bestOptScore=score;bestOpt=o;}
+  });
+  return{productName:bestProd.name,optionId:bestOpt.optionId,optionName:bestOpt.optionName};
+}
+
 function renderMappingUI(unmapped){
-  window._pendingMappingIds=unmapped.map(s=>s.optionId);
-  const cards=unmapped.map(s=>`
-    <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">
-      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
-        <div style="flex:1">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:2px">미등록 옵션ID</div>
-          <div style="font-size:13px;font-weight:700;font-family:'Roboto Mono',monospace;color:var(--accent4)">${s.optionId}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px">${s.optionName||'—'} · ${won(s.netAmt)}</div>
-        </div>
+  window._pendingMappings=[];
+  const cards=unmapped.map(s=>{
+    const match=autoMatchOption(s.optionName);
+    if(match)window._pendingMappings.push({oid:s.optionId,targetId:match.optionId});
+    const matchHtml=match
+      ?`<span style="font-size:11px;color:var(--profit);font-weight:600">→ ${match.productName} <span style="color:var(--text3)">${match.optionName}</span></span>`
+      :`<input type="text" placeholder="상품명 검색..." style="width:100%;box-sizing:border-box;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;font-size:11px" oninput="searchMapOptions('${s.optionId}',this.value)">
+        <div id="map-results-${s.optionId}" style="font-size:11px;margin-top:4px"></div>
+        <div id="map-selected-${s.optionId}" style="display:none;margin-top:4px;padding:5px 10px;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;font-size:11px;color:#166534"></div>
+        <input type="hidden" id="map-sel-${s.optionId}">`;
+    return`<div style="display:flex;gap:10px;align-items:center;padding:8px 14px;border:1px solid ${match?'#86efac':'var(--border)'};border-radius:8px;margin-bottom:5px;background:${match?'#f0fdf4':'#fff'}">
+      <div style="flex:0 0 auto;min-width:140px;max-width:200px">
+        <div style="font-size:11px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${s.optionName||''}">${s.optionName||'—'}</div>
+        <div style="font-size:9px;color:var(--text3);font-family:Pretendard,-apple-system,sans-serif;margin-top:1px">${s.optionId}</div>
       </div>
-      <input type="text" placeholder="상품명 또는 옵션명 검색..." style="width:100%;box-sizing:border-box;padding:8px 12px;border:1px solid var(--border2);border-radius:8px;font-size:12px;margin-bottom:8px"
-        oninput="searchMapOptions('${s.optionId}',this.value)">
-      <div id="map-results-${s.optionId}" style="font-size:11px;color:var(--text3)">검색어를 입력하면 옵션 목록이 표시됩니다.</div>
-      <div id="map-selected-${s.optionId}" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:12px;color:#166534"></div>
-      <input type="hidden" id="map-sel-${s.optionId}">
-    </div>`).join('');
+      <div style="flex:1;min-width:0">${matchHtml}</div>
+    </div>`;
+  }).join('');
+  const autoCount=window._pendingMappings.length;
+  const manualCount=unmapped.length-autoCount;
   return`<div class="panel" id="mapping-ui-panel" style="margin-top:12px">
     <div class="panel-header">
-      <div class="panel-title"><div class="dot y"></div>미등록 옵션 연결 <span style="font-size:.72rem;color:var(--text3);font-weight:400">(${unmapped.length}개)</span></div>
-      <button class="btn btn-primary btn-sm" onclick="saveMappings()">💾 매핑 저장</button>
+      <div class="panel-title"><div class="dot y"></div>미등록 옵션 연결 <span style="font-size:.72rem;color:var(--text3);font-weight:400">(자동 ${autoCount}개${manualCount>0?', 수동 '+manualCount+'개':''})</span></div>
+      <button class="btn btn-primary btn-sm" onclick="saveMappings()">확인 완료</button>
     </div>
-    <div class="panel-body">${cards}
-      <div style="font-size:11px;color:var(--text3)">💡 각 미등록 옵션에 연결할 원본 옵션을 검색해서 선택 후 매핑 저장을 눌러주세요.</div>
-    </div>
+    <div class="panel-body">${cards}</div>
   </div>`;
 }
 function searchMapOptions(oid,q){
   const el=document.getElementById('map-results-'+oid);
   if(!el)return;
-  if(!q.trim()){el.innerHTML='<span style="color:var(--text3)">검색어를 입력하면 옵션 목록이 표시됩니다.</span>';return;}
+  if(!q.trim()){el.innerHTML='';return;}
   const lq=q.toLowerCase();
-  const matches=DB.products().flatMap(p=>p.optionIds.map(o=>({pname:p.name,optionId:String(o.optionId),optionName:o.optionName||''}))).filter(o=>o.pname.toLowerCase().includes(lq)||o.optionName.toLowerCase().includes(lq)||o.optionId.includes(lq)).slice(0,15);
+  const matches=DB.products().flatMap(p=>p.optionIds.filter(o=>o.channel==='growth'||!o.channel).map(o=>({pname:p.name,optionId:String(o.optionId),optionName:o.optionName||'',channel:o.channel||''}))).filter(o=>o.pname.toLowerCase().includes(lq)||o.optionName.toLowerCase().includes(lq)||o.optionId.includes(lq)).slice(0,10);
   if(!matches.length){el.innerHTML='<span style="color:var(--text3)">검색 결과 없음</span>';return;}
-  el.innerHTML=matches.map(m=>`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;border:1px solid var(--border);margin-bottom:4px;background:#fff">
-    <input type="radio" name="map-radio-${oid}" value="${m.optionId}" onchange="selectMapRadio('${oid}','${m.optionId}','${m.pname.replace(/'/g,"\\'")} · ${m.optionName.replace(/'/g,"\\'")}')">
-    <span style="font-size:12px"><b>${m.pname}</b> <span style="color:var(--text3)">${m.optionName}</span> <span style="font-family:monospace;font-size:10px;color:var(--text3)">${m.optionId}</span></span>
-  </label>`).join('');
+  el.innerHTML=matches.map(m=>`<div style="display:flex;align-items:center;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid var(--border);margin-bottom:3px;background:#fafafa" onclick="selectMapOption('${oid}','${m.optionId}','${m.pname.replace(/'/g,"\\'")}',this)">
+    <span style="font-size:11px"><b>${m.pname}</b> <span style="color:var(--text3);font-size:10px">${m.optionName}</span></span>
+    <input type="radio" name="map-radio-${oid}" value="${m.optionId}" style="display:none">
+  </div>`).join('');
 }
-function selectMapRadio(oid,targetId,label){
+function selectMapOption(oid,targetId,label,el){
+  document.querySelectorAll(`[name="map-radio-${oid}"]`).forEach(r=>{r.checked=false;r.closest('div').style.border='1px solid var(--border)';r.closest('div').style.background='#fafafa';});
+  el.querySelector('input').checked=true;
+  el.style.border='1.5px solid var(--accent)';el.style.background='#f0f7ff';
   document.getElementById('map-sel-'+oid).value=targetId;
   const box=document.getElementById('map-selected-'+oid);
   box.style.display='block';
-  box.textContent='✅ 선택됨: '+label;
+  box.textContent='선택됨: '+label;
 }
 function saveMappings(){
-  const optionIds=window._pendingMappingIds||[];
+  const autoMappings=window._pendingMappings||[];
   const mappings=DB.get('option_mappings')||{};
   let saved=0;const stillUnmapped=[];
-  optionIds.forEach(oid=>{
-    const radio=document.querySelector(`input[name="map-radio-${oid}"]:checked`);
-    const val=radio?radio.value:(document.getElementById('map-sel-'+oid)?.value||'');
-    if(val){mappings[String(oid)]={targetOptionId:val,createdAt:new Date().toISOString()};saved++;}
-    else{const s=DB.sales().find(x=>String(x.optionId)===String(oid));if(s)stillUnmapped.push(s);}
+  // 자동 매칭 저장
+  autoMappings.forEach(m=>{
+    mappings[String(m.oid)]={targetOptionId:m.targetId,createdAt:new Date().toISOString()};saved++;
+  });
+  // 수동 매칭 저장 (검색으로 선택한 것)
+  document.querySelectorAll('[id^="map-sel-"]').forEach(el=>{
+    const oid=el.id.replace('map-sel-','');
+    const val=el.value;
+    if(val&&!mappings[String(oid)]){mappings[String(oid)]={targetOptionId:val,createdAt:new Date().toISOString()};saved++;}
+    else if(!val&&!mappings[String(oid)]){const s=DB.sales().find(x=>String(x.optionId)===String(oid));if(s)stillUnmapped.push(s);}
   });
   DB.set('option_mappings',mappings);
-  window._pendingMappingIds=[];
+  window._pendingMappings=[];
   document.getElementById('mapping-ui-panel')?.remove();
   const preview=document.getElementById('sales-preview');
   if(preview&&saved>0){const msg=document.createElement('div');msg.className='notice info';msg.style.marginTop='8px';msg.innerHTML=`✅ ${saved}개 매핑 저장됨.`;preview.appendChild(msg);}
@@ -1556,8 +1610,20 @@ function renderMappingManager(){
   if(!entries.length){el.innerHTML='<div class="empty-state" style="padding:16px">저장된 매핑이 없습니다.</div>';return;}
   const getOptName=targetId=>{for(const p of DB.products()){const o=p.optionIds.find(x=>String(x.optionId)===String(targetId));if(o)return`${p.name} · ${o.optionName}`;} return targetId;};
   el.innerHTML=`<table><thead><tr><th>미등록 옵션ID</th><th>연결된 원본 옵션</th><th>등록일</th><th></th></tr></thead><tbody>${
-    entries.map(([oid,m])=>`<tr><td style="font-family:monospace;font-size:12px">${oid}</td><td style="font-size:12px">${getOptName(m.targetOptionId)}</td><td style="font-size:11px;color:var(--text3)">${m.createdAt?new Date(m.createdAt).toLocaleDateString('ko-KR'):''}</td><td><button class="btn btn-danger btn-xs" onclick="deleteMapping('${oid}');renderProducts()">해제</button></td></tr>`).join('')
+    entries.map(([oid,m])=>`<tr><td style="font-family:Pretendard,-apple-system,sans-serif;font-size:12px">${oid}</td><td style="font-size:12px">${getOptName(m.targetOptionId)}</td><td style="font-size:11px;color:var(--text3)">${m.createdAt?new Date(m.createdAt).toLocaleDateString('ko-KR'):''}</td><td><button class="btn btn-danger btn-xs" onclick="deleteMapping('${oid}');renderProducts()">해제</button></td></tr>`).join('')
   }</tbody></table>`;
+}
+
+// 미매칭 옵션 자동 표시 (판매 업로드 탭 진입 시)
+function renderPendingUnmapped(){
+  const preview=document.getElementById('sales-preview');if(!preview)return;
+  const mappings=DB.get('option_mappings')||{};
+  const sales=DB.sales();
+  const allUnmapped=[...new Map(sales.filter(s=>!getOptionCostData(s.optionId)&&!mappings[String(s.optionId)]).map(s=>[s.optionId,s])).values()];
+  if(!allUnmapped.length){preview.innerHTML='';return;}
+  let html=`<div class="notice" style="background:#fffbeb;border-color:#fbbf24;margin-bottom:8px">⚠️ <b>${allUnmapped.length}개 옵션ID</b>가 아직 연결되지 않았습니다.</div>`;
+  html+=renderMappingUI(allUnmapped);
+  preview.innerHTML=html;
 }
 
 // ==================== AD UPLOAD ====================
@@ -1575,14 +1641,20 @@ function processAdFile(file){
     for(let i=1;i<rows.length;i++){
       const row=rows[i];const colA=String(row[0]||'').trim(),colB=String(row[1]||'').trim();
       const colF=row[5],colK=parseFloat(row[10])||0,colQ=parseFloat(row[16])||0;
-      if(colA&&colA!=='전체'){const pd=parseKorDate(colA);if(pd){if(currentDate)flush();currentDate=pd;currentDailyTotal=0;if(colB==='ROCKETGROWTH'&&colQ>0)currentDailyTotal=colQ;}}
-      else if(!colA&&colF){if(currentDate){newCampaign.push({date:currentDate,campaignId:String(colF),adCost:colK});const camps=DB.campaigns(),colG=String(row[6]||'').trim();if(!camps.find(c=>String(c.campaignId)===String(colF))){camps.push({id:'camp'+Date.now()+'_'+i,campaignId:String(colF),campaignName:colG,productId:'',budget:null});DB.set('campaigns',camps);}}}
+      // A열에 날짜가 있으면 currentDate 갱신
+      if(colA&&colA!=='전체'){const pd=parseKorDate(colA);if(pd){if(currentDate)flush();currentDate=pd;currentDailyTotal=0;}}
+      // currentDate 확정된 상태에서 각 행 처리 (날짜행 자체도 포함)
+      if(!currentDate)continue;
+      // ROCKETGROWTH 일별 총액
+      if(colB==='ROCKETGROWTH'&&colQ>0)currentDailyTotal=colQ;
+      // 캠페인 행: F열(캠페인ID)이 있으면 현재 날짜에 귀속
+      if(colF){newCampaign.push({date:currentDate,campaignId:String(colF),adCost:colK});const camps=DB.campaigns(),colG=String(row[6]||'').trim();if(!camps.find(c=>String(c.campaignId)===String(colF))){camps.push({id:'camp'+Date.now()+'_'+i,campaignId:String(colF),campaignName:colG,productId:'',budget:null});DB.set('campaigns',camps);}}
     }
     flush();
     const dates=[...new Set(newDaily.map(d=>d.date))];
     DB.set('ads_daily',[...DB.adsDaily().filter(d=>!dates.includes(d.date)),...newDaily]);
     DB.set('ads_campaign',[...DB.adsCampaign().filter(d=>!dates.includes(d.date)),...newCampaign]);
-    document.getElementById('ad-preview').innerHTML=`<div class="notice info">✅ 완료 — ${newDaily.length}일 | ${won(newDaily.reduce((a,d)=>a+d.totalAdCost,0))}</div>`;
+    document.getElementById('ad-preview').innerHTML=`<div class="notice info">✅ 완료 — ${newDaily.length}일 | 캠페인 ${newCampaign.length}건 | ${won(newDaily.reduce((a,d)=>a+d.totalAdCost,0))}</div>`;
     renderAdHistory();
   };
   reader.readAsArrayBuffer(file);
@@ -1868,19 +1940,33 @@ async function manualSync(type){
   const url=getServerUrl();
   const resEl=document.getElementById('sync-manual-result');
   if(!url){resEl.innerHTML='<div class="notice err">❌ 서버 URL을 먼저 저장하세요.</div>';return;}
-  resEl.innerHTML=`<div class="notice info"><span class="spinning">⟳</span> ${type} 동기화 중...</div>`;
+  resEl.innerHTML=`<div class="notice info"><span class="spinning">⟳</span> ${type} 동기화 중...${type==='products'?' (77개 상품 조회, 최대 3분 소요)':''}</div>`;
   addSyncLog(`${type} 동기화 시작`);
   try{
     if(type==='products'){
-      const res=await fetch(url+'/api/products',{signal:AbortSignal.timeout(30000)});
+      const res=await fetch(url+'/api/products',{signal:AbortSignal.timeout(300000)});
       const data=await res.json();
       addSyncLog(`서버 응답: success=${data.success}, count=${data.count}, products길이=${(data.products||[]).length}`);
       if(data.success){
-        const prods=DB.products();let added=0;
-        (data.products||[]).forEach(p=>{if(!prods.find(x=>x.id===p.id)){prods.push(p);added++;}});
+        const prods=DB.products();let added=0,updated=0;
+        (data.products||[]).forEach(p=>{
+          const exist=prods.find(x=>x.id===p.id);
+          if(!exist){prods.push(p);added++;}
+          else{
+            // 기존 상품의 optionIds 업데이트 (원가 데이터 보존)
+            const oldOpts=exist.optionIds||[];
+            const newOpts=(p.optionIds||[]).map(no=>{
+              const old=oldOpts.find(o=>o.optionId===no.optionId);
+              return old?{...no,importCost:old.importCost||0,couponDiscount:old.couponDiscount||0,commission:old.commission||0,shipping:old.shipping||0}:no;
+            });
+            if(JSON.stringify(oldOpts.map(o=>o.optionId).sort())!==JSON.stringify(newOpts.map(o=>o.optionId).sort())){
+              exist.optionIds=newOpts;exist.name=p.name;updated++;
+            }
+          }
+        });
         DB.set('products',prods);
-        resEl.innerHTML=`<div class="notice info">✅ 상품 ${added}개 추가됨 (총 ${prods.length}개)</div>`;
-        addSyncLog(`상품 동기화 완료 — ${added}개 추가`);
+        resEl.innerHTML=`<div class="notice info">✅ 상품 ${added}개 추가, ${updated}개 갱신 (총 ${prods.length}개, 옵션 ${prods.reduce((a,p)=>a+(p.optionIds||[]).length,0)}개)</div>`;
+        addSyncLog(`상품 동기화 완료 — ${added}개 추가, ${updated}개 갱신`);
       }else{
         resEl.innerHTML=`<div class="notice err">❌ 오류: ${data.error||JSON.stringify(data)}</div>`;
         addSyncLog(`오류: ${data.error||JSON.stringify(data)}`);
@@ -1956,8 +2042,15 @@ function loadApiKeyForm(){const url=DB.get('server_url')||'';const el=document.g
 let calYear=new Date().getFullYear(),calMonth=new Date().getMonth()+1,calMode='rev';
 
 function setCalMode(m,el){calMode=m;document.querySelectorAll('.cal-mode-btn button').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderCalendar();}
-function calPrev(){calMonth--;if(calMonth<1){calMonth=12;calYear--;}renderCalendar();}
-function calNext(){calMonth++;if(calMonth>12){calMonth=1;calYear++;}renderCalendar();}
+function calPrev(){calMonth--;if(calMonth<1){calMonth=12;calYear--;}syncCalToDateFilter();renderDashboard();}
+function calNext(){calMonth++;if(calMonth>12){calMonth=1;calYear++;}syncCalToDateFilter();renderDashboard();}
+function syncCalToDateFilter(){
+  const from=`${calYear}-${String(calMonth).padStart(2,'0')}-01`;
+  const last=new Date(calYear,calMonth,0).getDate();
+  const to=`${calYear}-${String(calMonth).padStart(2,'0')}-${String(last).padStart(2,'0')}`;
+  document.getElementById('db-from').value=from;
+  document.getElementById('db-to').value=to;
+}
 
 function getDateStats(date){
   const sales=DB.sales().filter(s=>s.saleDate===date),adD=DB.adsDaily().find(d=>d.date===date);
@@ -2015,15 +2108,16 @@ function getRangeStats(from,to){
 function renderDashboard(){
   const from=document.getElementById('db-from')?.value||'';
   const to=document.getElementById('db-to')?.value||'';
+  // 기간 필터 변경 시 달력도 해당 월로 이동
+  if(from){const d=new Date(from);calYear=d.getFullYear();calMonth=d.getMonth()+1;}
   const st=getRangeStats(from,to);
 
   // KPI
+  const profitClass=(st.profit||0)>=0?'kpi-highlight-profit':'kpi-highlight-loss';
   document.getElementById('db-kpi').innerHTML=`
-    <div class="kpi-card"><div class="kpi-label">매출</div><div class="kpi-val" style="color:var(--accent)">${won(st.rev)}</div><div class="kpi-sub">수량 ${num(st.qty)}개</div></div>
-    <div class="kpi-card"><div class="kpi-label">정산액</div><div class="kpi-val" style="color:var(--accent2)">${won(st.rev-st.ad)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">매입원가</div><div class="kpi-val" style="color:var(--accent4)">${won(st.cost)}</div></div>
+    <div class="kpi-card kpi-highlight"><div class="kpi-label">매출</div><div class="kpi-val" style="color:var(--accent)">${won(st.rev)}</div><div class="kpi-sub">수량 ${num(st.qty)}개</div></div>
     <div class="kpi-card"><div class="kpi-label">광고비</div><div class="kpi-val r">${won(st.ad)}</div><div class="kpi-sub">ROAS ${st.ad>0?(st.rev/st.ad*100).toFixed(0)+'%':'—'}</div></div>
-    <div class="kpi-card"><div class="kpi-label">순이익</div><div class="kpi-val ${(st.profit||0)>=0?'g':'r'}">${won(st.profit)}</div><div class="kpi-sub">마진율 ${st.margin!==null?pct(st.margin):'—'}</div></div>`;
+    <div class="kpi-card ${profitClass}"><div class="kpi-label">순이익</div><div class="kpi-val ${(st.profit||0)>=0?'g':'r'}">${won(st.profit)}</div><div class="kpi-sub">마진율 ${st.margin!==null?pct(st.margin):'—'}</div></div>`;
 
   // TOP 상품
   const prodRev={},prodProfit={};
@@ -2462,7 +2556,17 @@ function renderInventory(){
   if(toEl)toEl.value=d.toISOString().slice(0,10);
   try{populateProductSelects();}catch(e){console.error('populateProductSelects:',e);}
   try{updateNavInfo();}catch(e){console.error('updateNavInfo:',e);}
-  try{renderDashboard();}catch(e){console.error('renderDashboard:',e);}
+  // hash 기반 탭 복원
+  const hash=location.hash.replace('#','');
+  if(hash){
+    const parts=hash.split('/');
+    const main=parts[0],sub=parts[1];
+    if(MAIN_DEFAULT[main]!==undefined){
+      goMain(main,true);
+      if(sub&&SUBNAV[main]&&SUBNAV[main].find(s=>s.id===sub))goSub(main,sub,true);
+      else if(SUBNAV[main])goSub(main,MAIN_DEFAULT[main],true);
+    }else{try{renderDashboard();}catch(e){console.error('renderDashboard:',e);}}
+  }else{try{renderDashboard();}catch(e){console.error('renderDashboard:',e);}}
 })();
 </script>
 </body>
